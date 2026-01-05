@@ -3,20 +3,23 @@ set(CEL_SOURCES
     cel_error.c
     cel_memory.c
     cel_value.c
-    cel_string.c
-    cel_bytes.c
-    cel_list.c
-    cel_map.c
+    cel_container.c
+    cel_lexer.c
     cel_ast.c
-    cel_context.c
-    cel_functions.c
-    cel_macros.c
-    cel_program.c
-    parser/lexer.c
-    parser/parser.c
-    eval/cel_eval.c
-    eval/cel_operators.c
-    eval/cel_comprehension.c
+    cel_parser.c
+    cel_eval.c
+    # 下面的文件待实现
+    # cel_string.c
+    # cel_bytes.c
+    # cel_list.c
+    # cel_map.c
+    # cel_context.c
+    # cel_functions.c
+    # cel_macros.c
+    # cel_program.c
+    # eval/cel_eval.c
+    # eval/cel_operators.c
+    # eval/cel_comprehension.c
 )
 
 # 创建共享库和静态库

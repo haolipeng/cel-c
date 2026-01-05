@@ -3,6 +3,8 @@
  * @brief CEL-C 错误处理模块实现
  */
 
+#define _POSIX_C_SOURCE 200809L
+
 #include "cel/cel_error.h"
 #include <stdio.h>
 #include <stdlib.h>

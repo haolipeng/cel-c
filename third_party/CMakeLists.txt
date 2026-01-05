@@ -19,6 +19,8 @@ if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/sds)
 endif()
 add_library(sds STATIC sds/sds.c)
 target_include_directories(sds PUBLIC sds)
+# Disable -Werror for third-party code
+target_compile_options(sds PRIVATE -Wno-error)
 
 # PCRE2 (可选)
 if(CEL_ENABLE_REGEX)
