@@ -203,6 +203,26 @@ cel_value_t cel_value_bytes(const unsigned char *data, size_t length)
 	return value;
 }
 
+cel_value_t cel_value_timestamp(int64_t seconds, int32_t nanoseconds,
+				  int16_t offset_minutes)
+{
+	cel_value_t value;
+	value.type = CEL_TYPE_TIMESTAMP;
+	value.value.timestamp_value.seconds = seconds;
+	value.value.timestamp_value.nanoseconds = nanoseconds;
+	value.value.timestamp_value.offset_minutes = offset_minutes;
+	return value;
+}
+
+cel_value_t cel_value_duration(int64_t seconds, int32_t nanoseconds)
+{
+	cel_value_t value;
+	value.type = CEL_TYPE_DURATION;
+	value.value.duration_value.seconds = seconds;
+	value.value.duration_value.nanoseconds = nanoseconds;
+	return value;
+}
+
 /* ========== 值销毁 API ========== */
 
 void cel_value_destroy(cel_value_t *value)
@@ -327,6 +347,30 @@ bool cel_value_get_bytes(const cel_value_t *value,
 	return true;
 }
 
+bool cel_value_get_timestamp(const cel_value_t *value, cel_timestamp_t *out)
+{
+	if (!value || value->type != CEL_TYPE_TIMESTAMP) {
+		return false;
+	}
+
+	if (out) {
+		*out = value->value.timestamp_value;
+	}
+	return true;
+}
+
+bool cel_value_get_duration(const cel_value_t *value, cel_duration_t *out)
+{
+	if (!value || value->type != CEL_TYPE_DURATION) {
+		return false;
+	}
+
+	if (out) {
+		*out = value->value.duration_value;
+	}
+	return true;
+}
+
 /* ========== 类型检查 API ========== */
 
 bool cel_value_is_null(const cel_value_t *value)
@@ -362,6 +406,16 @@ bool cel_value_is_string(const cel_value_t *value)
 bool cel_value_is_bytes(const cel_value_t *value)
 {
 	return value && value->type == CEL_TYPE_BYTES;
+}
+
+bool cel_value_is_timestamp(const cel_value_t *value)
+{
+	return value && value->type == CEL_TYPE_TIMESTAMP;
+}
+
+bool cel_value_is_duration(const cel_value_t *value)
+{
+	return value && value->type == CEL_TYPE_DURATION;
 }
 
 cel_type_e cel_value_type(const cel_value_t *value)
@@ -460,6 +514,23 @@ bool cel_value_equals(const cel_value_t *a, const cel_value_t *b)
 		}
 
 		return memcmp(bytes_a->data, bytes_b->data, bytes_a->length) == 0;
+	}
+
+	case CEL_TYPE_TIMESTAMP: {
+		cel_timestamp_t *ts_a = &a->value.timestamp_value;
+		cel_timestamp_t *ts_b = &b->value.timestamp_value;
+
+		return ts_a->seconds == ts_b->seconds &&
+		       ts_a->nanoseconds == ts_b->nanoseconds &&
+		       ts_a->offset_minutes == ts_b->offset_minutes;
+	}
+
+	case CEL_TYPE_DURATION: {
+		cel_duration_t *dur_a = &a->value.duration_value;
+		cel_duration_t *dur_b = &b->value.duration_value;
+
+		return dur_a->seconds == dur_b->seconds &&
+		       dur_a->nanoseconds == dur_b->nanoseconds;
 	}
 
 	default:

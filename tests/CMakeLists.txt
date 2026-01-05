@@ -3,6 +3,7 @@ set(TESTS
     test_error
     test_memory
     test_value
+    test_timestamp_duration
     # 后续添加更多测试...
 )
 

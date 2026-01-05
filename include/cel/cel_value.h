@@ -75,6 +75,33 @@ typedef struct {
 	unsigned char data[];  /* 柔性数组 */
 } cel_bytes_t;
 
+/* ========== 时间戳类型 ========== */
+
+/**
+ * @brief CEL 时间戳 (RFC3339)
+ *
+ * 表示带时区的时间点，精度到纳秒。
+ * 例如: "2025-01-05T12:30:45+08:00"
+ */
+typedef struct {
+	int64_t seconds;         /* 自 1970-01-01 00:00:00 UTC 的秒数 */
+	int32_t nanoseconds;     /* 纳秒部分 (0-999999999) */
+	int16_t offset_minutes;  /* UTC 偏移量 (分钟，-720 到 +840) */
+} cel_timestamp_t;
+
+/* ========== 时长类型 ========== */
+
+/**
+ * @brief CEL 时长
+ *
+ * 表示时间段，可以为负。精度到纳秒。
+ * 例如: "1h30m45s" = 5445 秒
+ */
+typedef struct {
+	int64_t seconds;      /* 秒数 (可为负) */
+	int32_t nanoseconds;  /* 纳秒部分 (0-999999999，符号与 seconds 相同) */
+} cel_duration_t;
+
 /* ========== 值联合体 ========== */
 
 /**
@@ -87,9 +114,11 @@ typedef struct {
 		int64_t int_value;
 		uint64_t uint_value;
 		double double_value;
-		cel_string_t *string_value;  /* 指针，引用计数 */
-		cel_bytes_t *bytes_value;    /* 指针，引用计数 */
-		void *ptr_value;             /* 泛型指针 (list, map 等) */
+		cel_string_t *string_value;       /* 指针，引用计数 */
+		cel_bytes_t *bytes_value;         /* 指针，引用计数 */
+		cel_timestamp_t timestamp_value;  /* 直接存储时间戳 (16 字节) */
+		cel_duration_t duration_value;    /* 直接存储时长 (16 字节) */
+		void *ptr_value;                  /* 泛型指针 (list, map 等) */
 	} value;
 } cel_value_t;
 
@@ -146,6 +175,26 @@ cel_value_t cel_value_string_n(const char *str, size_t length);
  */
 cel_value_t cel_value_bytes(const unsigned char *data, size_t length);
 
+/**
+ * @brief 创建 timestamp 值
+ *
+ * @param seconds 自 1970-01-01 00:00:00 UTC 的秒数
+ * @param nanoseconds 纳秒部分 (0-999999999)
+ * @param offset_minutes UTC 偏移量 (分钟，-720 到 +840)
+ * @return 新创建的 timestamp 值
+ */
+cel_value_t cel_value_timestamp(int64_t seconds, int32_t nanoseconds,
+				  int16_t offset_minutes);
+
+/**
+ * @brief 创建 duration 值
+ *
+ * @param seconds 秒数 (可为负)
+ * @param nanoseconds 纳秒部分 (0-999999999)
+ * @return 新创建的 duration 值
+ */
+cel_value_t cel_value_duration(int64_t seconds, int32_t nanoseconds);
+
 /* ========== 值销毁 API ========== */
 
 /**
@@ -201,6 +250,24 @@ bool cel_value_get_string(const cel_value_t *value, const char **out_str,
 bool cel_value_get_bytes(const cel_value_t *value,
 			  const unsigned char **out_data, size_t *out_len);
 
+/**
+ * @brief 获取 timestamp 值
+ *
+ * @param value CEL 值
+ * @param out 输出 timestamp 指针 (可选)
+ * @return 成功返回 true
+ */
+bool cel_value_get_timestamp(const cel_value_t *value, cel_timestamp_t *out);
+
+/**
+ * @brief 获取 duration 值
+ *
+ * @param value CEL 值
+ * @param out 输出 duration 指针 (可选)
+ * @return 成功返回 true
+ */
+bool cel_value_get_duration(const cel_value_t *value, cel_duration_t *out);
+
 /* ========== 类型检查 API ========== */
 
 /**
@@ -237,6 +304,16 @@ bool cel_value_is_string(const cel_value_t *value);
  * @brief 检查值是否为 bytes
  */
 bool cel_value_is_bytes(const cel_value_t *value);
+
+/**
+ * @brief 检查值是否为 timestamp
+ */
+bool cel_value_is_timestamp(const cel_value_t *value);
+
+/**
+ * @brief 检查值是否为 duration
+ */
+bool cel_value_is_duration(const cel_value_t *value);
 
 /**
  * @brief 获取值的类型
@@ -303,6 +380,9 @@ cel_bytes_t *cel_bytes_create(const unsigned char *data, size_t length);
 #define CEL_UINT(x) cel_value_uint(x)
 #define CEL_DOUBLE(x) cel_value_double(x)
 #define CEL_STRING(x) cel_value_string(x)
+#define CEL_TIMESTAMP(sec, nsec, offset) \
+	cel_value_timestamp((sec), (nsec), (offset))
+#define CEL_DURATION(sec, nsec) cel_value_duration((sec), (nsec))
 
 #ifdef __cplusplus
 }
