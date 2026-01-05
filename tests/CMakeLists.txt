@@ -9,8 +9,21 @@ set(TESTS
 foreach(test_name ${TESTS})
     add_executable(${test_name} ${test_name}.c)
     target_link_libraries(${test_name} PRIVATE cel_static unity)
-    target_include_directories(${test_name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_include_directories(${test_name} PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${PROJECT_SOURCE_DIR}/include
+    )
+
+    # 设置测试超时 (30秒)
     add_test(NAME ${test_name} COMMAND ${test_name})
+    set_tests_properties(${test_name} PROPERTIES TIMEOUT 30)
+
+    # 如果启用 ASan，添加环境变量
+    if(CEL_USE_ASAN)
+        set_tests_properties(${test_name} PROPERTIES
+            ENVIRONMENT "ASAN_OPTIONS=detect_leaks=1:fast_unwind_on_malloc=0"
+        )
+    endif()
 endforeach()
 
 # 添加测试覆盖率目标 (需要 gcov)
