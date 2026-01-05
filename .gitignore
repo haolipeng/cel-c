@@ -1,0 +1,43 @@
+# Build artifacts
+build/
+cmake-build-*/
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Test outputs
+tests/*.log
+tests/*.xml
+Testing/
+
+# Coverage
+*.gcda
+*.gcno
+*.gcov
+coverage.info
+coverage/
+
+# Third-party downloads
+third_party/uthash/
+third_party/sds/
+third_party/cjson/
+third_party/unity/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+CTestTestfile.cmake
+install_manifest.txt
