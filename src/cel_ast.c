@@ -34,6 +34,8 @@ const char *cel_ast_node_type_name(cel_ast_node_type_e type)
 		return "MAP";
 	case CEL_AST_STRUCT:
 		return "STRUCT";
+	case CEL_AST_COMPREHENSION:
+		return "COMPREHENSION";
 	default:
 		return "<unknown>";
 	}
@@ -289,6 +291,39 @@ cel_ast_node_t *cel_ast_create_struct(const char *type_name,
 	return node;
 }
 
+cel_ast_node_t *cel_ast_create_comprehension(
+	const char *iter_var, size_t iter_var_length,
+	const char *iter_var2, size_t iter_var2_length,
+	cel_ast_node_t *iter_range,
+	const char *accu_var, size_t accu_var_length,
+	cel_ast_node_t *accu_init,
+	cel_ast_node_t *loop_cond,
+	cel_ast_node_t *loop_step,
+	cel_ast_node_t *result,
+	cel_token_location_t loc)
+{
+	cel_ast_node_t *node = malloc(sizeof(cel_ast_node_t));
+	if (!node) {
+		return NULL;
+	}
+
+	node->type = CEL_AST_COMPREHENSION;
+	node->loc = loc;
+	node->as.comprehension.iter_var = iter_var;
+	node->as.comprehension.iter_var_length = iter_var_length;
+	node->as.comprehension.iter_var2 = iter_var2;
+	node->as.comprehension.iter_var2_length = iter_var2_length;
+	node->as.comprehension.iter_range = iter_range;
+	node->as.comprehension.accu_var = accu_var;
+	node->as.comprehension.accu_var_length = accu_var_length;
+	node->as.comprehension.accu_init = accu_init;
+	node->as.comprehension.loop_cond = loop_cond;
+	node->as.comprehension.loop_step = loop_step;
+	node->as.comprehension.result = result;
+
+	return node;
+}
+
 /* ========== AST 销毁函数 ========== */
 
 void cel_ast_destroy(cel_ast_node_t *node)
@@ -362,6 +397,16 @@ void cel_ast_destroy(cel_ast_node_t *node)
 		}
 		free(node->as.struct_lit.fields);
 		/* 类型名指向源代码，不需要释放 */
+		break;
+
+	case CEL_AST_COMPREHENSION:
+		/* 销毁所有子节点 */
+		cel_ast_destroy(node->as.comprehension.iter_range);
+		cel_ast_destroy(node->as.comprehension.accu_init);
+		cel_ast_destroy(node->as.comprehension.loop_cond);
+		cel_ast_destroy(node->as.comprehension.loop_step);
+		cel_ast_destroy(node->as.comprehension.result);
+		/* 变量名指向源代码，不需要释放 */
 		break;
 	}
 

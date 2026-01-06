@@ -9,6 +9,8 @@ set(TESTS
     test_lexer
     test_parser
     # test_eval  # Temporarily disabled - needs API fixes
+    test_macros
+    test_comprehension
     # 后续添加更多测试...
 )
 

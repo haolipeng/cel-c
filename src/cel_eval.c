@@ -29,6 +29,8 @@ static bool eval_list(const cel_ast_list_t *list, cel_context_t *ctx,
 		      cel_value_t *result);
 static bool eval_map(const cel_ast_map_t *map, cel_context_t *ctx,
 		     cel_value_t *result);
+static bool eval_comprehension(const cel_ast_comprehension_t *comp,
+				 cel_context_t *ctx, cel_value_t *result);
 
 static void set_error(cel_context_t *ctx, const char *message);
 
@@ -199,6 +201,9 @@ static bool eval_node(const cel_ast_node_t *node, cel_context_t *ctx,
 	case CEL_AST_STRUCT:
 		set_error(ctx, "Struct literals not yet implemented");
 		return false;
+
+	case CEL_AST_COMPREHENSION:
+		return eval_comprehension(&node->as.comprehension, ctx, result);
 
 	default:
 		set_error(ctx, "Unknown AST node type");
@@ -695,6 +700,146 @@ static bool eval_map(const cel_ast_map_t *map, cel_context_t *ctx,
 	result->type = CEL_TYPE_MAP;
 	result->value.map_value = cel_map;
 	return true;
+}
+
+/* ========== Comprehension 求值 ========== */
+
+/**
+ * @brief 对 Comprehension 表达式求值
+ *
+ * Comprehension 执行模型:
+ * 1. 求值 iter_range，得到要迭代的集合（List 或 Map）
+ * 2. 求值 accu_init，初始化累加器变量
+ * 3. 对集合中的每个元素:
+ *    a. 将元素绑定到 iter_var
+ *    b. 求值 loop_cond，如果为 false 则中断循环
+ *    c. 求值 loop_step，更新累加器
+ * 4. 求值 result 表达式，返回最终结果
+ *
+ * @param comp Comprehension 节点
+ * @param ctx 求值上下文
+ * @param result 输出结果
+ * @return true 成功，false 失败
+ */
+static bool eval_comprehension(const cel_ast_comprehension_t *comp,
+				 cel_context_t *ctx, cel_value_t *result)
+{
+	if (!comp || !ctx || !result) {
+		set_error(ctx, "Invalid arguments to eval_comprehension");
+		return false;
+	}
+
+	/* 1. 求值迭代范围 */
+	cel_value_t iter_range_val;
+	if (!eval_node(comp->iter_range, ctx, &iter_range_val)) {
+		return false;
+	}
+
+	/* 检查迭代范围类型 */
+	if (iter_range_val.type != CEL_TYPE_LIST && iter_range_val.type != CEL_TYPE_MAP) {
+		set_error(ctx, "Comprehension iter_range must be a list or map");
+		cel_value_destroy(&iter_range_val);
+		return false;
+	}
+
+	/* 2. 求值累加器初始值 */
+	cel_value_t accu_val;
+	if (!eval_node(comp->accu_init, ctx, &accu_val)) {
+		cel_value_destroy(&iter_range_val);
+		return false;
+	}
+
+	/* 保存当前上下文的绑定数量（用于恢复作用域） */
+	size_t saved_binding_count = ctx->binding_count;
+
+	/* 添加累加器绑定 */
+	if (!cel_context_add_binding(ctx, comp->accu_var, comp->accu_var_length, accu_val)) {
+		set_error(ctx, "Failed to bind accumulator variable");
+		cel_value_destroy(&iter_range_val);
+		cel_value_destroy(&accu_val);
+		return false;
+	}
+
+	bool success = false;
+
+	/* 3. 迭代处理 */
+	if (iter_range_val.type == CEL_TYPE_LIST) {
+		/* List 迭代 */
+		cel_list_t *list = iter_range_val.value.list_value;
+		size_t list_size = cel_list_size(list);
+
+		for (size_t i = 0; i < list_size; i++) {
+			/* 获取列表元素 */
+			cel_value_t elem;
+			if (!cel_list_get(list, i, &elem)) {
+				set_error(ctx, "Failed to get list element");
+				goto cleanup;
+			}
+
+			/* 绑定循环变量 */
+			if (!cel_context_add_binding(ctx, comp->iter_var, comp->iter_var_length, elem)) {
+				set_error(ctx, "Failed to bind iteration variable");
+				goto cleanup;
+			}
+
+			/* 检查循环条件 */
+			cel_value_t cond_val;
+			if (!eval_node(comp->loop_cond, ctx, &cond_val)) {
+				/* 恢复绑定数量（移除循环变量） */
+				ctx->binding_count = saved_binding_count + 1; /* +1 for accu_var */
+				goto cleanup;
+			}
+
+			/* 条件必须是布尔值 */
+			if (cond_val.type != CEL_TYPE_BOOL) {
+				set_error(ctx, "Loop condition must be boolean");
+				ctx->binding_count = saved_binding_count + 1;
+				goto cleanup;
+			}
+
+			/* 如果条件为 false，中断循环 */
+			if (!cond_val.value.bool_value) {
+				/* 恢复绑定数量（移除循环变量） */
+				ctx->binding_count = saved_binding_count + 1;
+				break;
+			}
+
+			/* 求值循环步骤，更新累加器 */
+			cel_value_t new_accu_val;
+			if (!eval_node(comp->loop_step, ctx, &new_accu_val)) {
+				ctx->binding_count = saved_binding_count + 1;
+				goto cleanup;
+			}
+
+			/* 更新累加器绑定的值 */
+			cel_value_destroy(&ctx->bindings[saved_binding_count].value);
+			ctx->bindings[saved_binding_count].value = new_accu_val;
+
+			/* 移除循环变量绑定（准备下次迭代） */
+			ctx->binding_count = saved_binding_count + 1;
+		}
+
+	} else {
+		/* Map 迭代 - TODO: 实现 Map 迭代支持 */
+		set_error(ctx, "Map iteration in comprehension not yet implemented");
+		goto cleanup;
+	}
+
+	/* 4. 求值结果表达式 */
+	if (!eval_node(comp->result, ctx, result)) {
+		goto cleanup;
+	}
+
+	success = true;
+
+cleanup:
+	/* 恢复上下文（移除累加器和循环变量绑定） */
+	ctx->binding_count = saved_binding_count;
+
+	/* 清理迭代范围值 */
+	cel_value_destroy(&iter_range_val);
+
+	return success;
 }
 
 /* ========== 错误处理 ========== */

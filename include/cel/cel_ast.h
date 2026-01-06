@@ -57,6 +57,9 @@ typedef enum {
 	/* 结构体字面量 */
 	CEL_AST_STRUCT,       /* 结构体: Message{field: value} */
 
+	/* 推导式表达式 (由宏展开生成) */
+	CEL_AST_COMPREHENSION, /* 推导式: list.all(...), list.map(...) 等 */
+
 } cel_ast_node_type_e;
 
 /* ========== 一元运算符 ========== */
@@ -210,6 +213,41 @@ typedef struct {
 } cel_ast_struct_t;
 
 /**
+ * @brief 推导式表达式节点 (Comprehension)
+ *
+ * 推导式用于实现宏展开后的迭代逻辑，例如：
+ * - list.all(x, predicate)
+ * - list.exists(x, predicate)
+ * - list.map(x, transform)
+ * - list.filter(x, predicate)
+ *
+ * 执行模型：
+ * 1. 初始化累加器: accu_var = accu_init
+ * 2. 对 iter_range 中每个元素迭代:
+ *    a. 将元素绑定到 iter_var
+ *    b. 检查 loop_cond，如果为 false 则中断
+ *    c. 执行 loop_step，更新 accu_var
+ * 3. 返回 result
+ */
+typedef struct {
+	const char *iter_var;        /* 循环变量名 (例如: "x") */
+	size_t iter_var_length;      /* 循环变量名长度 */
+
+	const char *iter_var2;       /* 第二个循环变量 (Map迭代时使用, 可为NULL) */
+	size_t iter_var2_length;     /* 第二个循环变量名长度 */
+
+	cel_ast_node_t *iter_range;  /* 迭代范围 (列表或Map表达式) */
+
+	const char *accu_var;        /* 累加器变量名 (通常是 "@result") */
+	size_t accu_var_length;      /* 累加器变量名长度 */
+
+	cel_ast_node_t *accu_init;   /* 累加器初始值 */
+	cel_ast_node_t *loop_cond;   /* 循环条件 (false 时中断) */
+	cel_ast_node_t *loop_step;   /* 循环步骤 (更新累加器) */
+	cel_ast_node_t *result;      /* 结果表达式 */
+} cel_ast_comprehension_t;
+
+/**
  * @brief AST 节点
  */
 struct cel_ast_node {
@@ -228,6 +266,7 @@ struct cel_ast_node {
 		cel_ast_list_t list;
 		cel_ast_map_t map;
 		cel_ast_struct_t struct_lit;
+		cel_ast_comprehension_t comprehension;
 	} as;
 };
 
@@ -270,6 +309,16 @@ cel_ast_node_t *cel_ast_create_struct(const char *type_name,
 				       cel_ast_struct_field_t *fields,
 				       size_t field_count,
 				       cel_token_location_t loc);
+cel_ast_node_t *cel_ast_create_comprehension(
+	const char *iter_var, size_t iter_var_length,
+	const char *iter_var2, size_t iter_var2_length,
+	cel_ast_node_t *iter_range,
+	const char *accu_var, size_t accu_var_length,
+	cel_ast_node_t *accu_init,
+	cel_ast_node_t *loop_cond,
+	cel_ast_node_t *loop_step,
+	cel_ast_node_t *result,
+	cel_token_location_t loc);
 
 /* ========== AST 销毁 API ========== */
 
