@@ -1190,4 +1190,173 @@ size_t cel_string_length(const cel_value_t *str)
 	return s ? s->length : 0;
 }
 
+/* ========== JSON 转换实现 ========== */
 
+#ifdef CEL_ENABLE_JSON
+#include <cJSON.h>
+
+static cJSON *cel_value_to_cjson(const cel_value_t *value);
+static cel_value_t cjson_to_cel_value(const cJSON *json);
+
+static cJSON *cel_value_to_cjson(const cel_value_t *value)
+{
+	if (!value) {
+		return cJSON_CreateNull();
+	}
+
+	switch (value->type) {
+	case CEL_TYPE_NULL:
+		return cJSON_CreateNull();
+
+	case CEL_TYPE_BOOL:
+		return cJSON_CreateBool(value->value.bool_value);
+
+	case CEL_TYPE_INT:
+		return cJSON_CreateNumber((double)value->value.int_value);
+
+	case CEL_TYPE_UINT:
+		return cJSON_CreateNumber((double)value->value.uint_value);
+
+	case CEL_TYPE_DOUBLE:
+		return cJSON_CreateNumber(value->value.double_value);
+
+	case CEL_TYPE_STRING:
+		if (value->value.string_value) {
+			return cJSON_CreateString(value->value.string_value->data);
+		}
+		return cJSON_CreateNull();
+
+	case CEL_TYPE_LIST: {
+		cJSON *arr = cJSON_CreateArray();
+		if (!arr) return NULL;
+		cel_list_t *list = value->value.list_value;
+		if (list) {
+			for (size_t i = 0; i < list->length; i++) {
+				cel_value_t *item = cel_list_get(list, i);
+				cJSON *json_item = cel_value_to_cjson(item);
+				if (json_item) {
+					cJSON_AddItemToArray(arr, json_item);
+				}
+			}
+		}
+		return arr;
+	}
+
+	case CEL_TYPE_MAP: {
+		cJSON *obj = cJSON_CreateObject();
+		if (!obj) return NULL;
+		cel_map_t *map = value->value.map_value;
+		if (map && map->buckets) {
+			for (size_t i = 0; i < map->bucket_count; i++) {
+				cel_map_entry_t *entry = map->buckets[i];
+				while (entry) {
+					cel_value_t *key = entry->key;
+					cel_value_t *val = entry->value;
+					if (key && key->type == CEL_TYPE_STRING && key->value.string_value) {
+						cJSON *json_val = cel_value_to_cjson(val);
+						if (json_val) {
+							cJSON_AddItemToObject(obj, key->value.string_value->data, json_val);
+						}
+					}
+					entry = entry->next;
+				}
+			}
+		}
+		return obj;
+	}
+
+	default:
+		return cJSON_CreateNull();
+	}
+}
+
+static cel_value_t cjson_to_cel_value(const cJSON *json)
+{
+	if (!json) {
+		return cel_value_null();
+	}
+
+	if (cJSON_IsNull(json)) {
+		return cel_value_null();
+	}
+
+	if (cJSON_IsBool(json)) {
+		return cel_value_bool(cJSON_IsTrue(json));
+	}
+
+	if (cJSON_IsNumber(json)) {
+		double d = json->valuedouble;
+		if (d == (int64_t)d && d >= INT64_MIN && d <= INT64_MAX) {
+			return cel_value_int((int64_t)d);
+		}
+		return cel_value_double(d);
+	}
+
+	if (cJSON_IsString(json)) {
+		return cel_value_string(json->valuestring);
+	}
+
+	if (cJSON_IsArray(json)) {
+		cel_list_t *list = cel_list_create(cJSON_GetArraySize(json));
+		if (!list) {
+			return cel_value_null();
+		}
+		cJSON *item;
+		cJSON_ArrayForEach(item, json) {
+			cel_value_t val = cjson_to_cel_value(item);
+			cel_list_append(list, &val);
+			cel_value_destroy(&val);
+		}
+		cel_value_t result = cel_value_list(list);
+		return result;
+	}
+
+	if (cJSON_IsObject(json)) {
+		cel_map_t *map = cel_map_create(cJSON_GetArraySize(json));
+		if (!map) {
+			return cel_value_null();
+		}
+		cJSON *item;
+		cJSON_ArrayForEach(item, json) {
+			cel_value_t key = cel_value_string(item->string);
+			cel_value_t val = cjson_to_cel_value(item);
+			cel_map_put(map, &key, &val);
+			cel_value_destroy(&key);
+			cel_value_destroy(&val);
+		}
+		cel_value_t result = cel_value_map(map);
+		return result;
+	}
+
+	return cel_value_null();
+}
+
+char *cel_value_to_json(const cel_value_t *value)
+{
+	cJSON *json = cel_value_to_cjson(value);
+	if (!json) {
+		return NULL;
+	}
+
+	char *str = cJSON_PrintUnformatted(json);
+	cJSON_Delete(json);
+	return str;
+}
+
+cel_value_t cel_value_from_json(const char *json_str)
+{
+	if (!json_str) {
+		return cel_value_null();
+	}
+
+	cJSON *json = cJSON_Parse(json_str);
+	if (!json) {
+		return cel_value_null();
+	}
+
+	cel_value_t result = cjson_to_cel_value(json);
+	cJSON_Delete(json);
+	return result;
+}
+
+#endif /* CEL_ENABLE_JSON */

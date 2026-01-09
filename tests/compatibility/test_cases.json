@@ -1,0 +1,191 @@
+{
+  "name": "CEL Compatibility Test Suite",
+  "version": "1.0",
+  "tests": [
+    {
+      "name": "arithmetic_add",
+      "expr": "1 + 2",
+      "expected": {"type": "int", "value": 3}
+    },
+    {
+      "name": "arithmetic_sub",
+      "expr": "5 - 3",
+      "expected": {"type": "int", "value": 2}
+    },
+    {
+      "name": "arithmetic_mul",
+      "expr": "4 * 3",
+      "expected": {"type": "int", "value": 12}
+    },
+    {
+      "name": "arithmetic_div",
+      "expr": "10 / 3",
+      "expected": {"type": "int", "value": 3}
+    },
+    {
+      "name": "arithmetic_mod",
+      "expr": "10 % 3",
+      "expected": {"type": "int", "value": 1}
+    },
+    {
+      "name": "arithmetic_neg",
+      "expr": "-5",
+      "expected": {"type": "int", "value": -5}
+    },
+    {
+      "name": "comparison_eq",
+      "expr": "1 == 1",
+      "expected": {"type": "bool", "value": true}
+    },
+    {
+      "name": "comparison_ne",
+      "expr": "1 != 2",
+      "expected": {"type": "bool", "value": true}
+    },
+    {
+      "name": "comparison_lt",
+      "expr": "1 < 2",
+      "expected": {"type": "bool", "value": true}
+    },
+    {
+      "name": "comparison_le",
+      "expr": "2 <= 2",
+      "expected": {"type": "bool", "value": true}
+    },
+    {
+      "name": "comparison_gt",
+      "expr": "3 > 2",
+      "expected": {"type": "bool", "value": true}
+    },
+    {
+      "name": "comparison_ge",
+      "expr": "3 >= 3",
+      "expected": {"type": "bool", "value": true}
+    },
+    {
+      "name": "logical_and",
+      "expr": "true && true",
+      "expected": {"type": "bool", "value": true}
+    },
+    {
+      "name": "logical_or",
+      "expr": "false || true",
+      "expected": {"type": "bool", "value": true}
+    },
+    {
+      "name": "logical_not",
+      "expr": "!false",
+      "expected": {"type": "bool", "value": true}
+    },
+    {
+      "name": "string_concat",
+      "expr": "\"hello\" + \" world\"",
+      "expected": {"type": "string", "value": "hello world"}
+    },
+    {
+      "name": "string_eq",
+      "expr": "\"abc\" == \"abc\"",
+      "expected": {"type": "bool", "value": true}
+    },
+    {
+      "name": "conditional_true",
+      "expr": "true ? 1 : 2",
+      "expected": {"type": "int", "value": 1}
+    },
+    {
+      "name": "conditional_false",
+      "expr": "false ? 1 : 2",
+      "expected": {"type": "int", "value": 2}
+    },
+    {
+      "name": "list_literal",
+      "expr": "[1, 2, 3]",
+      "expected": {"type": "list", "value": [1, 2, 3]}
+    },
+    {
+      "name": "list_index",
+      "expr": "[1, 2, 3][1]",
+      "expected": {"type": "int", "value": 2}
+    },
+    {
+      "name": "list_size",
+      "expr": "size([1, 2, 3])",
+      "expected": {"type": "int", "value": 3}
+    },
+    {
+      "name": "map_literal",
+      "expr": "{\"a\": 1, \"b\": 2}",
+      "expected": {"type": "map"}
+    },
+    {
+      "name": "map_access",
+      "expr": "{\"a\": 1}[\"a\"]",
+      "expected": {"type": "int", "value": 1}
+    },
+    {
+      "name": "in_list",
+      "expr": "2 in [1, 2, 3]",
+      "expected": {"type": "bool", "value": true}
+    },
+    {
+      "name": "in_map",
+      "expr": "\"a\" in {\"a\": 1}",
+      "expected": {"type": "bool", "value": true}
+    },
+    {
+      "name": "double_arithmetic",
+      "expr": "1.5 + 2.5",
+      "expected": {"type": "double", "value": 4.0}
+    },
+    {
+      "name": "mixed_arithmetic",
+      "expr": "1 + 2.0",
+      "expected": {"type": "double", "value": 3.0}
+    },
+    {
+      "name": "string_startsWith",
+      "expr": "\"hello\".startsWith(\"he\")",
+      "expected": {"type": "bool", "value": true}
+    },
+    {
+      "name": "string_endsWith",
+      "expr": "\"hello\".endsWith(\"lo\")",
+      "expected": {"type": "bool", "value": true}
+    },
+    {
+      "name": "string_contains",
+      "expr": "\"hello\".contains(\"ell\")",
+      "expected": {"type": "bool", "value": true}
+    },
+    {
+      "name": "type_int",
+      "expr": "int(\"42\")",
+      "expected": {"type": "int", "value": 42}
+    },
+    {
+      "name": "type_double",
+      "expr": "double(\"3.14\")",
+      "expected": {"type": "double", "value": 3.14}
+    },
+    {
+      "name": "type_string",
+      "expr": "string(42)",
+      "expected": {"type": "string", "value": "42"}
+    },
+    {
+      "name": "null_literal",
+      "expr": "null",
+      "expected": {"type": "null"}
+    },
+    {
+      "name": "precedence",
+      "expr": "1 + 2 * 3",
+      "expected": {"type": "int", "value": 7}
+    },
+    {
+      "name": "parentheses",
+      "expr": "(1 + 2) * 3",
+      "expected": {"type": "int", "value": 9}
+    }
+  ]
+}

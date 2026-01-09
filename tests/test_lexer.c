@@ -49,8 +49,8 @@ static void assert_string_token(cel_token_t *token, const char *expected_str)
 {
 	TEST_ASSERT_EQUAL_INT(CEL_TOKEN_STRING, token->type);
 	size_t expected_len = strlen(expected_str);
-	TEST_ASSERT_EQUAL_size_t(expected_len, token->value.str_length);
-	TEST_ASSERT_EQUAL_MEMORY(expected_str, token->value.str_value,
+	TEST_ASSERT_EQUAL_size_t(expected_len, token->value.str.str_length);
+	TEST_ASSERT_EQUAL_MEMORY(expected_str, token->value.str.str_value,
 				 expected_len);
 }
 
@@ -59,8 +59,8 @@ static void assert_identifier_token(cel_token_t *token,
 {
 	TEST_ASSERT_EQUAL_INT(CEL_TOKEN_IDENTIFIER, token->type);
 	size_t expected_len = strlen(expected_name);
-	TEST_ASSERT_EQUAL_size_t(expected_len, token->value.str_length);
-	TEST_ASSERT_EQUAL_MEMORY(expected_name, token->value.str_value,
+	TEST_ASSERT_EQUAL_size_t(expected_len, token->value.str.str_length);
+	TEST_ASSERT_EQUAL_MEMORY(expected_name, token->value.str.str_value,
 				 expected_len);
 }
 
@@ -203,7 +203,7 @@ void test_string_with_escape(void)
 	TEST_ASSERT_TRUE(cel_lexer_next_token(&lexer, &token));
 	TEST_ASSERT_EQUAL_INT(CEL_TOKEN_STRING, token.type);
 	/* 转义序列保持原样 (解析阶段处理) */
-	TEST_ASSERT_EQUAL_size_t(12, token.value.str_length);
+	TEST_ASSERT_EQUAL_size_t(12, token.value.str.str_length);
 }
 
 void test_string_unterminated(void)
@@ -226,8 +226,8 @@ void test_bytes_simple(void)
 	cel_lexer_init(&lexer, "b\"hello\"");
 	TEST_ASSERT_TRUE(cel_lexer_next_token(&lexer, &token));
 	TEST_ASSERT_EQUAL_INT(CEL_TOKEN_BYTES, token.type);
-	TEST_ASSERT_EQUAL_size_t(5, token.value.str_length);
-	TEST_ASSERT_EQUAL_MEMORY("hello", token.value.str_value, 5);
+	TEST_ASSERT_EQUAL_size_t(5, token.value.str.str_length);
+	TEST_ASSERT_EQUAL_MEMORY("hello", token.value.str.str_value, 5);
 }
 
 void test_bytes_empty(void)
@@ -238,7 +238,7 @@ void test_bytes_empty(void)
 	cel_lexer_init(&lexer, "b\"\"");
 	TEST_ASSERT_TRUE(cel_lexer_next_token(&lexer, &token));
 	TEST_ASSERT_EQUAL_INT(CEL_TOKEN_BYTES, token.type);
-	TEST_ASSERT_EQUAL_size_t(0, token.value.str_length);
+	TEST_ASSERT_EQUAL_size_t(0, token.value.str.str_length);
 }
 
 /* ========== 布尔值和 null 测试 ========== */

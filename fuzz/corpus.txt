@@ -1,0 +1,39 @@
+# CEL-C 模糊测试语料库
+
+## 基础表达式
+1 + 2
+true && false
+"hello" + " world"
+x > 0
+items[0]
+user.name
+
+## 复杂表达式
+x > 0 ? "positive" : "negative"
+items.all(i, i > 0)
+items.exists(i, i == 42)
+items.map(i, i * 2)
+items.filter(i, i > 0)
+
+## 边界情况
+""
+0
+-1
+9223372036854775807
+-9223372036854775808
+0.0
+1e308
+[]
+{}
+null
+
+## 嵌套表达式
+((1 + 2) * 3)
+items[items[0]]
+a.b.c.d.e
+
+## 特殊字符
+"hello\nworld"
+"tab\there"
+"quote\"here"
+b"bytes"

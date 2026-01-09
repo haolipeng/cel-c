@@ -197,7 +197,7 @@ bool cel_lexer_next_token(cel_lexer_t *lexer, cel_token_t *token)
 						  CEL_TOKEN_EQUAL_EQUAL :
 						  CEL_TOKEN_ERROR);
 		if (token->type == CEL_TOKEN_ERROR) {
-			token->value.str_value = "Unexpected '=' (use '==')";
+			token->value.str.str_value = "Unexpected '=' (use '==')";
 		}
 		return true;
 	case '!':
@@ -395,8 +395,8 @@ static cel_token_t make_token(cel_lexer_t *lexer, cel_token_type_e type)
 	token.loc.length = lexer->current - lexer->start;
 
 	/* 默认初始化值 */
-	token.value.str_value = NULL;
-	token.value.str_length = 0;
+	token.value.str.str_value = NULL;
+	token.value.str.str_length = 0;
 
 	return token;
 }
@@ -404,7 +404,7 @@ static cel_token_t make_token(cel_lexer_t *lexer, cel_token_type_e type)
 static cel_token_t make_error_token(cel_lexer_t *lexer, const char *message)
 {
 	cel_token_t token = make_token(lexer, CEL_TOKEN_ERROR);
-	token.value.str_value = message;
+	token.value.str.str_value = message;
 	return token;
 }
 
@@ -539,8 +539,8 @@ static cel_token_t scan_string(cel_lexer_t *lexer)
 
 	cel_token_t token = make_token(lexer, CEL_TOKEN_STRING);
 	/* 字符串内容 (不包含引号) */
-	token.value.str_value = lexer->start + 1;
-	token.value.str_length = (lexer->current - lexer->start) - 2;
+	token.value.str.str_value = lexer->start + 1;
+	token.value.str.str_length = (lexer->current - lexer->start) - 2;
 
 	return token;
 }
@@ -583,14 +583,20 @@ static cel_token_t scan_bytes(cel_lexer_t *lexer)
 
 	cel_token_t token = make_token(lexer, CEL_TOKEN_BYTES);
 	/* 字节内容 (不包含 b"...") */
-	token.value.str_value = lexer->start + 2; /* 跳过 b" */
-	token.value.str_length = (lexer->current - lexer->start) - 3; /* 减去 b" 和 " */
+	token.value.str.str_value = lexer->start + 2; /* 跳过 b" */
+	token.value.str.str_length = (lexer->current - lexer->start) - 3; /* 减去 b" 和 " */
 
 	return token;
 }
 
 static cel_token_t scan_identifier(cel_lexer_t *lexer)
 {
+	/* 检查是否是 bytes 字面量 (b"...") */
+	if (lexer->start[0] == 'b' && peek(lexer) == '"') {
+		/* 直接调用 scan_bytes，它会处理 " */
+		return scan_bytes(lexer);
+	}
+
 	/* 扫描标识符 */
 	while (isalnum(peek(lexer)) || peek(lexer) == '_') {
 		advance(lexer);
@@ -602,8 +608,8 @@ static cel_token_t scan_identifier(cel_lexer_t *lexer)
 
 	/* 对于标识符，保存文本 */
 	if (token.type == CEL_TOKEN_IDENTIFIER) {
-		token.value.str_value = lexer->start;
-		token.value.str_length = lexer->current - lexer->start;
+		token.value.str.str_value = lexer->start;
+		token.value.str.str_length = lexer->current - lexer->start;
 	}
 
 	return token;

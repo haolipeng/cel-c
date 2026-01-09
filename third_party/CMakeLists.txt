@@ -22,14 +22,8 @@ target_include_directories(sds PUBLIC sds)
 # Disable -Werror for third-party code
 target_compile_options(sds PRIVATE -Wno-error)
 
-# PCRE2 (可选)
-if(CEL_ENABLE_REGEX)
-    find_package(PCRE2 QUIET)
-    if(NOT PCRE2_FOUND)
-        message(WARNING "PCRE2 not found, regex support will be disabled")
-        set(CEL_ENABLE_REGEX OFF CACHE BOOL "Enable regex support" FORCE)
-    endif()
-endif()
+# PCRE2 (可选) - 检测已在主 CMakeLists.txt 中完成
+# 这里不再重复检测
 
 # cJSON (可选)
 if(CEL_ENABLE_JSON)
@@ -40,6 +34,9 @@ if(CEL_ENABLE_JSON)
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         )
     endif()
+    # 禁用 cJSON 测试以避免与 Unity 冲突
+    set(ENABLE_CJSON_TEST OFF CACHE BOOL "" FORCE)
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
     add_subdirectory(cjson EXCLUDE_FROM_ALL)
 endif()
 

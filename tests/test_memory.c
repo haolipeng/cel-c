@@ -155,7 +155,7 @@ void test_arena_reset(void)
 	TEST_ASSERT_NOT_NULL(ptr3);
 
 	/* 重置后的第一次分配应该返回相同地址 */
-	TEST_ASSERT_EQUAL(ptr1, ptr3);
+	TEST_ASSERT_EQUAL_PTR(ptr1, ptr3);
 
 	arena_destroy(arena);
 }

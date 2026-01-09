@@ -67,7 +67,7 @@ cel_macro_type_e cel_macro_detect(const char *func_name, bool has_target,
 
 /* ========== 辅助器管理 ========== */
 
-cel_macro_helper_t *cel_macro_helper_create(cel_arena_t *arena,
+cel_macro_helper_t *cel_macro_helper_create(arena_t *arena,
 					      uint64_t start_id)
 {
 	if (!arena) {
@@ -114,6 +114,7 @@ static cel_error_code_e extract_ident(cel_ast_node_t *node,
  */
 cel_ast_node_t *cel_macro_create_accu_ident(cel_macro_helper_t *helper)
 {
+	(void)helper; /* Unused for now */
 	cel_token_location_t loc = {0};
 	return cel_ast_create_ident("@result", 7, loc);
 }
@@ -124,6 +125,7 @@ cel_ast_node_t *cel_macro_create_accu_ident(cel_macro_helper_t *helper)
 cel_ast_node_t *cel_macro_create_bool_literal(cel_macro_helper_t *helper,
 						bool value)
 {
+	(void)helper; /* Unused for now */
 	cel_token_location_t loc = {0};
 	cel_value_t val = cel_value_bool(value);
 	return cel_ast_create_literal(val, loc);
@@ -135,6 +137,7 @@ cel_ast_node_t *cel_macro_create_bool_literal(cel_macro_helper_t *helper,
 cel_ast_node_t *cel_macro_create_int_literal(cel_macro_helper_t *helper,
 					       int64_t value)
 {
+	(void)helper; /* Unused for now */
 	cel_token_location_t loc = {0};
 	cel_value_t val = cel_value_int(value);
 	return cel_ast_create_literal(val, loc);
@@ -145,6 +148,7 @@ cel_ast_node_t *cel_macro_create_int_literal(cel_macro_helper_t *helper,
  */
 cel_ast_node_t *cel_macro_create_empty_list(cel_macro_helper_t *helper)
 {
+	(void)helper; /* Unused for now */
 	cel_token_location_t loc = {0};
 	return cel_ast_create_list(NULL, 0, loc);
 }

@@ -11,7 +11,7 @@
 
 /* ========== Unity 设置 ========== */
 
-static cel_arena_t *arena = NULL;
+static arena_t *arena = NULL;
 static cel_macro_helper_t *helper = NULL;
 
 void setUp(void)
@@ -149,11 +149,10 @@ void test_macro_expand_all_basic(void)
 	/* 测试: [1, 2, 3].all(x, x > 0) */
 
 	/* 创建目标列表 [1, 2, 3] */
-	cel_ast_node_t *elements[3] = {
-		create_int(1),
-		create_int(2),
-		create_int(3)
-	};
+	cel_ast_node_t **elements = malloc(3 * sizeof(cel_ast_node_t *));
+	elements[0] = create_int(1);
+	elements[1] = create_int(2);
+	elements[2] = create_int(3);
 	cel_ast_node_t *target = create_list(elements, 3);
 
 	/* 创建参数: x (标识符), x > 0 (谓词) */
@@ -213,11 +212,10 @@ void test_macro_expand_exists_basic(void)
 {
 	/* 测试: [1, 2, 3].exists(x, x > 2) */
 
-	cel_ast_node_t *elements[3] = {
-		create_int(1),
-		create_int(2),
-		create_int(3)
-	};
+	cel_ast_node_t **elements = malloc(3 * sizeof(cel_ast_node_t *));
+	elements[0] = create_int(1);
+	elements[1] = create_int(2);
+	elements[2] = create_int(3);
 	cel_ast_node_t *target = create_list(elements, 3);
 
 	cel_ast_node_t *args[2] = {
@@ -259,11 +257,10 @@ void test_macro_expand_exists_one_basic(void)
 {
 	/* 测试: [1, 2, 3].exists_one(x, x == 2) */
 
-	cel_ast_node_t *elements[3] = {
-		create_int(1),
-		create_int(2),
-		create_int(3)
-	};
+	cel_ast_node_t **elements = malloc(3 * sizeof(cel_ast_node_t *));
+	elements[0] = create_int(1);
+	elements[1] = create_int(2);
+	elements[2] = create_int(3);
 	cel_ast_node_t *target = create_list(elements, 3);
 
 	cel_ast_node_t *args[2] = {
@@ -309,11 +306,10 @@ void test_macro_expand_map_basic(void)
 {
 	/* 测试: [1, 2, 3].map(x, x * 2) */
 
-	cel_ast_node_t *elements[3] = {
-		create_int(1),
-		create_int(2),
-		create_int(3)
-	};
+	cel_ast_node_t **elements = malloc(3 * sizeof(cel_ast_node_t *));
+	elements[0] = create_int(1);
+	elements[1] = create_int(2);
+	elements[2] = create_int(3);
 	cel_ast_node_t *target = create_list(elements, 3);
 
 	cel_ast_node_t *args[2] = {
@@ -354,11 +350,10 @@ void test_macro_expand_filter_basic(void)
 {
 	/* 测试: [1, 2, 3].filter(x, x > 1) */
 
-	cel_ast_node_t *elements[3] = {
-		create_int(1),
-		create_int(2),
-		create_int(3)
-	};
+	cel_ast_node_t **elements = malloc(3 * sizeof(cel_ast_node_t *));
+	elements[0] = create_int(1);
+	elements[1] = create_int(2);
+	elements[2] = create_int(3);
 	cel_ast_node_t *target = create_list(elements, 3);
 
 	cel_ast_node_t *args[2] = {
@@ -396,7 +391,7 @@ void test_macro_expand_all_invalid_args(void)
 	/* 参数数量不足 */
 	cel_ast_node_t *args[1] = { create_ident("x") };
 	cel_error_code_e err = cel_macro_expand_all(helper, target, args, 1, &result);
-	TEST_ASSERT_NOT_EQUAL_INT(CEL_OK, err);
+	TEST_ASSERT_TRUE(err != CEL_OK);
 
 	cel_ast_destroy(target);
 }
@@ -409,7 +404,7 @@ void test_macro_expand_null_helper(void)
 
 	/* helper 为 NULL */
 	cel_error_code_e err = cel_macro_expand_all(NULL, target, args, 2, &result);
-	TEST_ASSERT_NOT_EQUAL_INT(CEL_OK, err);
+	TEST_ASSERT_TRUE(err != CEL_OK);
 
 	cel_ast_destroy(target);
 }

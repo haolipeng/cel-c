@@ -51,12 +51,40 @@ void cel_parser_init(cel_parser_t *parser, cel_lexer_t *lexer)
 	parser->had_error = false;
 	parser->panic_mode = false;
 	parser->error = NULL;
+	parser->errors = NULL;
+	parser->errors_tail = NULL;
+	parser->error_count = 0;
 	parser->recursion_depth = 0;
 	parser->max_recursion = 100;
 
 	/* 初始化 Token */
 	parser->current.type = CEL_TOKEN_EOF;
 	parser->previous.type = CEL_TOKEN_EOF;
+}
+
+void cel_parser_cleanup(cel_parser_t *parser)
+{
+	if (!parser) {
+		return;
+	}
+
+	/* 释放单一错误 */
+	if (parser->error) {
+		cel_error_destroy(parser->error);
+		parser->error = NULL;
+	}
+
+	/* 释放错误列表 */
+	cel_parse_error_t *err = parser->errors;
+	while (err) {
+		cel_parse_error_t *next = err->next;
+		free(err->message);
+		free(err);
+		err = next;
+	}
+	parser->errors = NULL;
+	parser->errors_tail = NULL;
+	parser->error_count = 0;
 }
 
 void cel_parser_set_max_recursion(cel_parser_t *parser, size_t max_depth)
@@ -237,16 +265,16 @@ static cel_ast_node_t *parse_primary(cel_parser_t *parser)
 
 	/* 字符串字面量 */
 	case CEL_TOKEN_STRING: {
-		cel_value_t value = cel_value_string_n(token.value.str_value,
-							token.value.str_length);
+		cel_value_t value = cel_value_string_n(token.value.str.str_value,
+							token.value.str.str_length);
 		return cel_ast_create_literal(value, token.loc);
 	}
 
 	/* 字节字面量 */
 	case CEL_TOKEN_BYTES: {
 		cel_value_t value = cel_value_bytes(
-			(const uint8_t *)token.value.str_value,
-			token.value.str_length);
+			(const uint8_t *)token.value.str.str_value,
+			token.value.str.str_length);
 		return cel_ast_create_literal(value, token.loc);
 	}
 
@@ -269,8 +297,8 @@ static cel_ast_node_t *parse_primary(cel_parser_t *parser)
 
 	/* 标识符 */
 	case CEL_TOKEN_IDENTIFIER:
-		return cel_ast_create_ident(token.value.str_value,
-					     token.value.str_length, token.loc);
+		return cel_ast_create_ident(token.value.str.str_value,
+					     token.value.str.str_length, token.loc);
 
 	/* 括号表达式 */
 	case CEL_TOKEN_LPAREN: {
@@ -318,8 +346,8 @@ static cel_ast_node_t *parse_postfix(cel_parser_t *parser,
 		cel_token_t field_token = parser->current;
 		advance(parser);
 
-		return cel_ast_create_select(left, field_token.value.str_value,
-					      field_token.value.str_length,
+		return cel_ast_create_select(left, field_token.value.str.str_value,
+					      field_token.value.str.str_length,
 					      optional, loc);
 	}
 
@@ -398,11 +426,25 @@ static cel_ast_node_t *parse_postfix(cel_parser_t *parser,
 
 			return cel_ast_create_call(func_name, func_length, NULL,
 						   args, arg_count, func_loc);
-		} else {
+		} else if (left->type == CEL_AST_SELECT) {
 			/* 方法调用: obj.method(args) */
-			/* 暂不支持，返回错误 */
+			/* SELECT 节点包含: operand (对象), field (方法名) */
+			const char *method_name = left->as.select.field;
+			size_t method_length = left->as.select.field_length;
+			cel_ast_node_t *target = left->as.select.operand;
+			cel_token_location_t call_loc = left->loc;
+
+			/* 将 SELECT 节点转换为 CALL 节点 */
+			/* target 已被保存，无需单独复制 */
+			left->as.select.operand = NULL; /* 防止 destroy 时释放 */
+			free(left); /* 释放 SELECT 节点本身 (field 是指向原始数据的指针) */
+
+			return cel_ast_create_call(method_name, method_length, target,
+						   args, arg_count, call_loc);
+		} else {
+			/* 其他类型不能作为调用目标 */
 			error_at(parser, &parser->previous,
-				 "Method calls not yet supported");
+				 "Invalid call target");
 			for (size_t i = 0; i < arg_count; i++) {
 				cel_ast_destroy(args[i]);
 			}
@@ -641,7 +683,7 @@ static void advance(cel_parser_t *parser)
 			break;
 		}
 
-		error_at_current(parser, parser->current.value.str_value);
+		error_at_current(parser, parser->current.value.str.str_value);
 	}
 }
 

@@ -27,7 +27,9 @@ static cel_ast_node_t *parse_expr(const char *source)
 	cel_lexer_init(&lexer, source);
 	cel_parser_init(&parser, &lexer);
 
-	return cel_parser_parse(&parser);
+	cel_ast_node_t *ast = cel_parser_parse(&parser);
+	cel_parser_cleanup(&parser);
+	return ast;
 }
 
 /* ========== 字面量测试 ========== */

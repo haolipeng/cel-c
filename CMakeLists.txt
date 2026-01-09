@@ -36,6 +36,22 @@ option(CEL_BUILD_BENCH "Build benchmarks" OFF)
 option(CEL_BUILD_EXAMPLES "Build examples" ON)
 option(CEL_USE_ASAN "Enable AddressSanitizer" OFF)
 
+# PCRE2 检测
+if(CEL_ENABLE_REGEX)
+    find_package(PkgConfig QUIET)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(PCRE2 IMPORTED_TARGET libpcre2-8)
+        if(PCRE2_FOUND)
+            add_library(PCRE2::PCRE2-8 ALIAS PkgConfig::PCRE2)
+            message(STATUS "PCRE2 found via pkg-config")
+        endif()
+    endif()
+    if(NOT PCRE2_FOUND)
+        message(WARNING "PCRE2 not found, regex support disabled")
+        set(CEL_ENABLE_REGEX OFF)
+    endif()
+endif()
+
 # AddressSanitizer
 if(CEL_USE_ASAN)
     add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
@@ -68,6 +84,12 @@ endif()
 # 基准测试
 if(CEL_BUILD_BENCH)
     add_subdirectory(bench)
+endif()
+
+# 模糊测试
+option(CEL_BUILD_FUZZ "Build fuzzing targets" OFF)
+if(CEL_BUILD_FUZZ)
+    add_subdirectory(fuzz)
 endif()
 
 # 安装规则

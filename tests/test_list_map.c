@@ -118,7 +118,7 @@ void test_list_reference_counting(void)
 	TEST_ASSERT_EQUAL(1, list->ref_count);
 
 	cel_list_t *list2 = cel_list_retain(list);
-	TEST_ASSERT_EQUAL(list, list2);
+	TEST_ASSERT_EQUAL_PTR(list, list2);
 	TEST_ASSERT_EQUAL(2, list->ref_count);
 
 	cel_list_release(list2);
@@ -139,7 +139,7 @@ void test_list_value_wrapper(void)
 
 	cel_list_t *retrieved;
 	TEST_ASSERT_TRUE(cel_value_get_list(&list_value, &retrieved));
-	TEST_ASSERT_EQUAL(list, retrieved);
+	TEST_ASSERT_EQUAL_PTR(list, retrieved);
 	TEST_ASSERT_EQUAL(1, cel_list_size(retrieved));
 
 	cel_value_destroy(&list_value);
@@ -184,6 +184,9 @@ void test_list_nested(void)
 	cel_list_t *outer_list = cel_list_create(0);
 	cel_value_t inner_value = cel_value_list(inner_list);
 	cel_list_append(outer_list, &inner_value);
+
+	/* 释放原始引用 (append 已增加引用计数) */
+	cel_list_release(inner_list);
 
 	TEST_ASSERT_EQUAL(1, cel_list_size(outer_list));
 
@@ -332,7 +335,7 @@ void test_map_reference_counting(void)
 	TEST_ASSERT_EQUAL(1, map->ref_count);
 
 	cel_map_t *map2 = cel_map_retain(map);
-	TEST_ASSERT_EQUAL(map, map2);
+	TEST_ASSERT_EQUAL_PTR(map, map2);
 	TEST_ASSERT_EQUAL(2, map->ref_count);
 
 	cel_map_release(map2);
@@ -354,7 +357,7 @@ void test_map_value_wrapper(void)
 
 	cel_map_t *retrieved;
 	TEST_ASSERT_TRUE(cel_value_get_map(&map_value, &retrieved));
-	TEST_ASSERT_EQUAL(map, retrieved);
+	TEST_ASSERT_EQUAL_PTR(map, retrieved);
 	TEST_ASSERT_EQUAL(1, cel_map_size(retrieved));
 
 	cel_value_destroy(&key);
@@ -395,6 +398,9 @@ void test_map_nested(void)
 	cel_value_t outer_key = cel_value_string("nested");
 	cel_value_t inner_map_value = cel_value_map(inner_map);
 	cel_map_put(outer_map, &outer_key, &inner_map_value);
+
+	/* 释放原始引用 (put 已增加引用计数) */
+	cel_map_release(inner_map);
 
 	TEST_ASSERT_EQUAL(1, cel_map_size(outer_map));
 

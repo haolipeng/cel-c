@@ -11,6 +11,7 @@
 
 #include "cel/cel_ast.h"
 #include "cel/cel_error.h"
+#include "cel/cel_memory.h"
 #include <stdbool.h>
 
 #ifdef __cplusplus
@@ -38,8 +39,8 @@ typedef enum {
  * 用于在宏展开过程中生成新的 AST 节点并分配 ID
  */
 typedef struct {
-    cel_arena_t *arena;        /* Arena 分配器 */
-    uint64_t next_id;          /* 下一个可用的节点 ID */
+    arena_t *arena;        /* Arena 分配器 */
+    uint64_t next_id;      /* 下一个可用的节点 ID */
 } cel_macro_helper_t;
 
 /* ========== 宏检测和展开 API ========== */
@@ -83,7 +84,7 @@ cel_error_code_e cel_macro_expand(cel_macro_helper_t *helper,
  * @param start_id 起始节点 ID
  * @return 宏展开辅助器指针，失败返回 NULL
  */
-cel_macro_helper_t *cel_macro_helper_create(cel_arena_t *arena, uint64_t start_id);
+cel_macro_helper_t *cel_macro_helper_create(arena_t *arena, uint64_t start_id);
 
 /**
  * @brief 销毁宏展开辅助器

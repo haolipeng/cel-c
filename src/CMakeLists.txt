@@ -7,17 +7,17 @@ set(CEL_SOURCES
     cel_lexer.c
     cel_ast.c
     cel_parser.c
+    cel_parser_api.c
     cel_eval.c
+    cel_macros.c
+    cel_context.c  # Task 4.1 完整实现
+    cel_program.c  # Task 4.6 程序对象 API
     # 下面的文件待实现
     # cel_string.c
     # cel_bytes.c
     # cel_list.c
     # cel_map.c
-    # cel_context.c
     # cel_functions.c
-    # cel_macros.c
-    # cel_program.c
-    # eval/cel_eval.c
     # eval/cel_operators.c
     # eval/cel_comprehension.c
 )
@@ -33,11 +33,17 @@ target_link_libraries(cel_static PRIVATE sds)
 if(CEL_ENABLE_REGEX AND PCRE2_FOUND)
     target_link_libraries(cel PRIVATE PCRE2::PCRE2-8)
     target_link_libraries(cel_static PRIVATE PCRE2::PCRE2-8)
+    target_compile_definitions(cel PRIVATE CEL_ENABLE_REGEX)
+    target_compile_definitions(cel_static PRIVATE CEL_ENABLE_REGEX)
 endif()
 
 if(CEL_ENABLE_JSON)
     target_link_libraries(cel PRIVATE cjson)
     target_link_libraries(cel_static PRIVATE cjson)
+    target_compile_definitions(cel PRIVATE CEL_ENABLE_JSON)
+    target_compile_definitions(cel_static PRIVATE CEL_ENABLE_JSON)
+    target_include_directories(cel PRIVATE ${CMAKE_SOURCE_DIR}/third_party/cjson)
+    target_include_directories(cel_static PRIVATE ${CMAKE_SOURCE_DIR}/third_party/cjson)
 endif()
 
 # 编译定义

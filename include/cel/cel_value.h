@@ -721,6 +721,26 @@ size_t cel_string_length(const cel_value_t *str);
 	cel_value_timestamp((sec), (nsec), (offset))
 #define CEL_DURATION(sec, nsec) cel_value_duration((sec), (nsec))
 
+/* ========== JSON 转换 API ========== */
+
+#ifdef CEL_ENABLE_JSON
+/**
+ * @brief 将 CEL 值转换为 JSON 字符串
+ *
+ * @param value CEL 值
+ * @return JSON 字符串 (调用者负责 free)，失败返回 NULL
+ */
+char *cel_value_to_json(const cel_value_t *value);
+
+/**
+ * @brief 从 JSON 字符串解析 CEL 值
+ *
+ * @param json JSON 字符串
+ * @return 解析后的 CEL 值，失败返回 null 值
+ */
+cel_value_t cel_value_from_json(const char *json);
+#endif /* CEL_ENABLE_JSON */
+
 #ifdef __cplusplus
 }
 #endif

@@ -113,8 +113,10 @@ typedef struct {
 		int64_t int_value;       /* CEL_TOKEN_INT */
 		uint64_t uint_value;     /* CEL_TOKEN_UINT */
 		double double_value;     /* CEL_TOKEN_DOUBLE */
-		const char *str_value;   /* CEL_TOKEN_STRING, CEL_TOKEN_BYTES, CEL_TOKEN_IDENTIFIER, CEL_TOKEN_ERROR */
-		size_t str_length;       /* 字符串/字节长度 */
+		struct {
+			const char *str_value;   /* CEL_TOKEN_STRING, CEL_TOKEN_BYTES, CEL_TOKEN_IDENTIFIER, CEL_TOKEN_ERROR */
+			size_t str_length;       /* 字符串/字节长度 */
+		} str;
 	} value;
 } cel_token_t;
 
